@@ -1,0 +1,39 @@
+{
+  "name": "mcp-display",
+  "version": "1.0.0",
+  "description": "A local MCP server supporting HTTP transport that offers tools for an MCP client to show content",
+  "main": "src/server/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "node --watch src/server/index.js",
+    "client:dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "jest",
+    "test:e2e": "playwright test",
+    "test:install": "playwright install"
+  },
+  "keywords": ["mcp", "display", "server", "vue", "nodejs"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.1",
+    "cors": "^2.8.5",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "vite": "^5.0.0",
+    "jest": "^29.7.0",
+    "@playwright/test": "^1.40.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+} 
