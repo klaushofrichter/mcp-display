@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "display": {
+      "type": "http",
+      "url": "http://localhost:8080",
+      "description": "Display of text and image content"
+    }
+  }
+} 

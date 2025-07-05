@@ -3,23 +3,12 @@ import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { v4 as uuidv4 } from 'uuid';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 class MCPDisplayServer {
   constructor() {
     this.app = express();
     this.server = createServer(this.app);
     this.wss = new WebSocketServer({ server: this.server });
-    this.mcpServer = new Server({
-      name: 'mcp-display-server',
-      version: '1.0.0'
-    }, {
-      capabilities: {
-        tools: {}
-      }
-    });
     
     this.clients = new Map();
     this.connectionLog = [];
@@ -27,7 +16,6 @@ class MCPDisplayServer {
     
     this.setupExpress();
     this.setupWebSocket();
-    this.setupMCPServer();
   }
 
   setupExpress() {
@@ -54,12 +42,119 @@ class MCPDisplayServer {
     this.app.post('/mcp', async (req, res) => {
       try {
         const request = req.body;
-        const response = await this.mcpServer.request(request);
+        console.log('MCP Request received:', JSON.stringify(request, null, 2));
+        
+        // Handle MCP protocol messages
+        const response = await this.handleMCPRequest(request);
         res.json(response);
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('MCP Request error:', error);
+        res.status(500).json({ 
+          jsonrpc: '2.0',
+          id: req.body.id || null,
+          error: { 
+            code: -32000,
+            message: error.message 
+          }
+        });
       }
     });
+  }
+
+  async handleMCPRequest(request) {
+    const { method, params, id } = request;
+    
+    switch (method) {
+      case 'initialize':
+        return {
+          jsonrpc: '2.0',
+          id: id,
+          result: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: {}
+            },
+            serverInfo: {
+              name: 'mcp-display-server',
+              version: '1.0.0'
+            }
+          }
+        };
+      
+      case 'notifications/initialized':
+        // Client has finished initialization
+        return null; // No response needed for notifications
+      
+      case 'tools/list':
+        return {
+          jsonrpc: '2.0',
+          id: id,
+          result: {
+            tools: [
+              {
+                name: 'display_text',
+                description: 'Display text content in the browser',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    text: {
+                      type: 'string',
+                      description: 'The text to display'
+                    }
+                  },
+                  required: ['text']
+                }
+              },
+              {
+                name: 'display_image',
+                description: 'Display base64 encoded image in the browser',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    imageData: {
+                      type: 'string',
+                      description: 'Base64 encoded image data'
+                    },
+                    mimeType: {
+                      type: 'string',
+                      description: 'MIME type of the image (e.g., image/png, image/jpeg)',
+                      default: 'image/png'
+                    }
+                  },
+                  required: ['imageData']
+                }
+              }
+            ]
+          }
+        };
+      
+      case 'tools/call':
+        const { name, arguments: args } = params;
+        
+        // Log the connection
+        this.logConnection(name, args);
+        
+        let result;
+        switch (name) {
+          case 'display_text':
+            result = this.handleDisplayText(args);
+            break;
+          case 'display_image':
+            result = this.handleDisplayImage(args);
+            break;
+          default:
+            throw new Error(`Unknown tool: ${name}`);
+        }
+        
+        return {
+          jsonrpc: '2.0',
+          id: id,
+          result: result
+        };
+      
+      default:
+        throw new Error(`Unknown method: ${method}`);
+    }
   }
 
   setupWebSocket() {
@@ -81,64 +176,7 @@ class MCPDisplayServer {
     });
   }
 
-  setupMCPServer() {
-    // Register tools
-    this.mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [
-          {
-            name: 'display_text',
-            description: 'Display text content in the browser',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                text: {
-                  type: 'string',
-                  description: 'The text to display'
-                }
-              },
-              required: ['text']
-            }
-          },
-          {
-            name: 'display_image',
-            description: 'Display base64 encoded image in the browser',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                imageData: {
-                  type: 'string',
-                  description: 'Base64 encoded image data'
-                },
-                mimeType: {
-                  type: 'string',
-                  description: 'MIME type of the image (e.g., image/png, image/jpeg)',
-                  default: 'image/png'
-                }
-              },
-              required: ['imageData']
-            }
-          }
-        ]
-      };
-    });
 
-    this.mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-      
-      // Log the connection
-      this.logConnection(name, args);
-      
-      switch (name) {
-        case 'display_text':
-          return this.handleDisplayText(args);
-        case 'display_image':
-          return this.handleDisplayImage(args);
-        default:
-          throw new Error(`Unknown tool: ${name}`);
-      }
-    });
-  }
 
   handleDisplayText(args) {
     const content = {
