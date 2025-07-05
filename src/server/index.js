@@ -12,7 +12,8 @@ class MCPDisplayServer {
     
     this.clients = new Map();
     this.connectionLog = [];
-    this.displayContent = null;
+    this.displayContent = [];
+    this.maxContentItems = 100;
     
     this.setupExpress();
     this.setupWebSocket();
@@ -33,7 +34,7 @@ class MCPDisplayServer {
     });
     
     this.app.post('/api/clear', (req, res) => {
-      this.displayContent = null;
+      this.displayContent = [];
       this.broadcastToClients({ type: 'clear' });
       res.json({ success: true });
     });
@@ -163,7 +164,7 @@ class MCPDisplayServer {
       this.clients.set(clientId, ws);
       
       // Send current content to new client
-      if (this.displayContent) {
+      if (this.displayContent.length > 0) {
         ws.send(JSON.stringify({
           type: 'content',
           data: this.displayContent
@@ -180,13 +181,21 @@ class MCPDisplayServer {
 
   handleDisplayText(args) {
     const content = {
+      id: uuidv4(),
       type: 'text',
       data: args.text,
       timestamp: new Date().toISOString()
     };
     
-    this.displayContent = content;
-    this.broadcastToClients({ type: 'content', data: content });
+    // Add to beginning of array (newest first)
+    this.displayContent.unshift(content);
+    
+    // Limit to max items
+    if (this.displayContent.length > this.maxContentItems) {
+      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+    }
+    
+    this.broadcastToClients({ type: 'content', data: this.displayContent });
     
     return {
       content: [{
@@ -198,14 +207,22 @@ class MCPDisplayServer {
 
   handleDisplayImage(args) {
     const content = {
+      id: uuidv4(),
       type: 'image',
       data: args.imageData,
       mimeType: args.mimeType || 'image/png',
       timestamp: new Date().toISOString()
     };
     
-    this.displayContent = content;
-    this.broadcastToClients({ type: 'content', data: content });
+    // Add to beginning of array (newest first)
+    this.displayContent.unshift(content);
+    
+    // Limit to max items
+    if (this.displayContent.length > this.maxContentItems) {
+      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+    }
+    
+    this.broadcastToClients({ type: 'content', data: this.displayContent });
     
     return {
       content: [{

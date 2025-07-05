@@ -1,39 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- Main Display Area -->
-    <main class="main-content">
-      <div class="display-header">
-        <h1>MCP Display</h1>
-        <button @click="clearDisplay" class="clear-button">Clear Display</button>
-      </div>
-      
-      <div class="display-area">
-        <div v-if="!displayContent" class="empty-state">
-          <div class="empty-icon">📺</div>
-          <h2>Ready to Display</h2>
-          <p>Waiting for content from MCP clients...</p>
-        </div>
-        
-        <div v-else class="content-display">
-          <div class="content-header">
-            <span class="content-type">{{ displayContent.type.toUpperCase() }}</span>
-            <span class="content-timestamp">{{ formatTimestamp(displayContent.timestamp) }}</span>
-          </div>
-          
-          <div class="content-body">
-            <div v-if="displayContent.type === 'text'" class="text-content">
-              <pre>{{ displayContent.data }}</pre>
-            </div>
-            
-            <div v-if="displayContent.type === 'image'" class="image-content">
-              <img :src="getImageSrc(displayContent)" alt="MCP Display Image" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-    
-    <!-- Sidebar -->
+    <!-- Sidebar - moved to left -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h3>Connection Log</h3>
@@ -60,6 +27,45 @@
         </div>
       </div>
     </aside>
+    
+    <!-- Main Display Area - now takes remaining space -->
+    <main class="main-content">
+      <div class="display-header">
+        <h1>MCP Display</h1>
+        <button @click="clearDisplay" class="clear-button">Clear Display</button>
+      </div>
+      
+      <div class="display-area">
+        <div v-if="displayContent.length === 0" class="empty-state">
+          <div class="empty-icon">📺</div>
+          <h2>Ready to Display</h2>
+          <p>Waiting for content from MCP clients...</p>
+        </div>
+        
+        <div v-else class="content-list">
+          <div 
+            v-for="item in displayContent" 
+            :key="item.id"
+            class="content-item"
+          >
+            <div class="content-header">
+              <div class="content-meta">
+                <span class="content-type">{{ item.type.toUpperCase() }}</span>
+                <span class="content-timestamp">{{ formatTimestamp(item.timestamp) }}</span>
+              </div>
+              <div class="content-inline">
+                <div v-if="item.type === 'text'" class="text-content-inline">
+                  <pre>{{ item.data }}</pre>
+                </div>
+                <div v-if="item.type === 'image'" class="image-content-inline">
+                  <img :src="getImageSrc(item)" alt="MCP Display Image" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -69,7 +75,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 export default {
   name: 'App',
   setup() {
-    const displayContent = ref(null)
+    const displayContent = ref([])
     const connectionLog = ref([])
     const websocket = ref(null)
     
@@ -99,7 +105,7 @@ export default {
             }
             break
           case 'clear':
-            displayContent.value = null
+            displayContent.value = []
             break
         }
       }
@@ -118,7 +124,7 @@ export default {
     const clearDisplay = async () => {
       try {
         await fetch('http://localhost:8080/api/clear', { method: 'POST' })
-        displayContent.value = null
+        displayContent.value = []
       } catch (error) {
         console.error('Error clearing display:', error)
       }
@@ -142,7 +148,7 @@ export default {
         const contentResponse = await fetch('http://localhost:8080/api/content')
         const contentData = await contentResponse.json()
         if (contentData.content) {
-          displayContent.value = contentData.content
+          displayContent.value = Array.isArray(contentData.content) ? contentData.content : []
         }
         
         // Load connection log
@@ -178,19 +184,40 @@ export default {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
   background-color: #f5f5f5;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar {
+  width: 350px;
+  min-width: 350px;
+  max-width: 350px;
+  background-color: white;
+  margin: 20px 0 20px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
 }
 
 .main-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background-color: white;
-  margin: 20px;
-  margin-right: 10px;
+  margin: 20px 20px 20px 10px;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -203,6 +230,7 @@ export default {
   padding: 20px 30px;
   background-color: #fafafa;
   border-bottom: 1px solid #e1e5e9;
+  flex-shrink: 0;
 }
 
 .display-header h1 {
@@ -220,6 +248,7 @@ export default {
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .clear-button:hover {
@@ -230,6 +259,7 @@ export default {
   flex: 1;
   padding: 30px;
   overflow: auto;
+  min-height: 0;
 }
 
 .empty-state {
@@ -252,19 +282,38 @@ export default {
   color: #333;
 }
 
-.content-display {
-  height: 100%;
+.content-list {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.content-item {
+  background-color: #fafafa;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e1e5e9;
 }
 
 .content-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #e1e5e9;
+  flex-direction: row;
+  align-items: flex-start;
+  flex-shrink: 0;
+  gap: 20px;
+}
+
+.content-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.content-inline {
+  flex: 1;
+  min-width: 0;
 }
 
 .content-type {
@@ -281,49 +330,40 @@ export default {
   font-size: 14px;
 }
 
-.content-body {
-  flex: 1;
-  overflow: auto;
-}
 
-.text-content {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
+
+.text-content-inline {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
   border: 1px solid #e1e5e9;
 }
 
-.text-content pre {
+.text-content-inline pre {
   white-space: pre-wrap;
   font-family: 'SF Mono', Monaco, monospace;
   font-size: 14px;
   line-height: 1.6;
   color: #333;
+  margin: 0;
 }
 
-.image-content {
+.image-content-inline {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 200px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e1e5e9;
 }
 
-.image-content img {
+.image-content-inline img {
   max-width: 100%;
   max-height: 70vh;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar {
-  width: 350px;
-  background-color: white;
-  margin: 20px;
-  margin-left: 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
 }
 
 .sidebar-header {
@@ -331,6 +371,7 @@ export default {
   background-color: #fafafa;
   border-bottom: 1px solid #e1e5e9;
   border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
 }
 
 .sidebar-header h3 {
@@ -349,6 +390,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  min-height: 0;
 }
 
 .empty-log {
