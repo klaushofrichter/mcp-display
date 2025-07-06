@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # MCP Display Demo Script
 # This script demonstrates all three content types: text, image, and SVG
@@ -33,7 +34,7 @@ curl -s -X POST http://localhost:8080/mcp \
     "params": {
       "name": "display_text",
       "arguments": {
-        "text": "🚀 Welcome to MCP Display Demo!\n\nThis demonstration showcases all three supported content types:\n\n📝 TEXT - Rich formatted text with emojis and formatting\n🖼️ IMAGE - High-quality images with proper scaling\n🎨 SVG - Vector graphics with interactive elements\n\nFeatures:\n• Real-time content updates via WebSocket\n• Professional UI with responsive design\n• Connection logging and monitoring\n• Multiple content types in one interface\n• Truncated logging for large data\n\nEnjoy the demo! 🎉"
+        "text": "🚀 Welcome to MCP Display Demo!\n\nThis demonstration showcases all three supported content types:\n\n📝 TEXT - Rich formatted text with emojis and formatting\n🖼️ IMAGE - High-quality images with proper scaling\n🎨 SVG - Vector graphics with interactive elements\n\nFeatures:\n• Real-time content updates via WebSocket\n• Professional UI with responsive design\n• Connection logging and monitoring\n• Multiple content types in one interface\n\nTo connect Claude Desktop to this server, run:\nclaude mcp add --transport http display-http http://localhost:3000/mcp\n\nEnjoy the demo! 🎉"
       }
     }
   }' > /dev/null
@@ -60,7 +61,7 @@ curl -s -X POST http://localhost:8080/mcp \
 sleep 2
 
 # 3. Display image (water.png)
-echo "🖼️ Displaying water lily image..."
+echo "🖼️  Displaying water lily image..."
 if [ -f "public/water.png" ]; then
     # Convert image to base64 and send
     IMAGE_B64=$(base64 -i public/water.png | tr -d '\n')

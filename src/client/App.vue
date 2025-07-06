@@ -361,7 +361,7 @@ export default {
 
 .image-content-inline {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   min-height: 200px;
   background-color: white;
