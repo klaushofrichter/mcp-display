@@ -259,18 +259,40 @@ npm run test:install
 
 ### REST Endpoints
 
+#### GET /api/health
+Returns server health status and statistics.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "uptime": "123s",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "version": "1.0.0",
+  "server": "mcp-display-server",
+  "stats": {
+    "contentItems": 5,
+    "connections": 10,
+    "websocketClients": 2
+  }
+}
+```
+
 #### GET /api/content
 Returns the currently displayed content.
 
 **Response:**
 ```json
 {
-  "content": {
-    "type": "text|image",
-    "data": "content data",
-    "timestamp": "2024-01-01T00:00:00.000Z",
-    "mimeType": "image/png" // only for images
-  }
+  "content": [
+    {
+      "id": "uuid",
+      "type": "text|image",
+      "data": "content data",
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "mimeType": "image/png" // only for images
+    }
+  ]
 }
 ```
 

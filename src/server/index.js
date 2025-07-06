@@ -17,6 +17,7 @@ class MCPDisplayServer {
     this.connectionLog = [];
     this.displayContent = [];
     this.maxContentItems = 100;
+    this.startTime = new Date();
     
     this.setupExpress();
     this.setupWebSocket();
@@ -28,6 +29,22 @@ class MCPDisplayServer {
     this.app.use(express.static('dist'));
     
     // API endpoints
+    this.app.get('/api/health', (req, res) => {
+      const uptime = Math.floor((new Date() - this.startTime) / 1000);
+      res.json({
+        status: 'healthy',
+        uptime: `${uptime}s`,
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        server: 'mcp-display-server',
+        stats: {
+          contentItems: this.displayContent.length,
+          connections: this.connectionLog.length,
+          websocketClients: this.clients.size
+        }
+      });
+    });
+    
     this.app.get('/api/content', (req, res) => {
       res.json({ content: this.displayContent });
     });
