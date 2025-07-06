@@ -99,6 +99,18 @@ class MCPDisplayServer {
       logRequest.params.arguments.imageData = truncatedData;
     }
     
+    // If this is a display_svg call, truncate the svgData if it's very long
+    if (logRequest.method === 'tools/call' && 
+        logRequest.params?.name === 'display_svg' && 
+        logRequest.params?.arguments?.svgData) {
+      
+      const svgData = logRequest.params.arguments.svgData;
+      if (svgData.length > 500) {
+        const truncatedData = svgData.substring(0, 500) + '... [truncated ' + (svgData.length - 500) + ' more characters]';
+        logRequest.params.arguments.svgData = truncatedData;
+      }
+    }
+    
     return logRequest;
   }
 
@@ -164,6 +176,25 @@ class MCPDisplayServer {
                   },
                   required: ['imageData']
                 }
+              },
+              {
+                name: 'display_svg',
+                description: 'Display SVG graphics in the browser',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    svgData: {
+                      type: 'string',
+                      description: 'SVG markup as a string'
+                    },
+                    title: {
+                      type: 'string',
+                      description: 'Optional title for the SVG',
+                      default: ''
+                    }
+                  },
+                  required: ['svgData']
+                }
               }
             ]
           }
@@ -182,6 +213,9 @@ class MCPDisplayServer {
             break;
           case 'display_image':
             result = this.handleDisplayImage(args);
+            break;
+          case 'display_svg':
+            result = this.handleDisplaySVG(args);
             break;
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -272,14 +306,51 @@ class MCPDisplayServer {
     };
   }
 
+  handleDisplaySVG(args) {
+    const content = {
+      id: uuidv4(),
+      type: 'svg',
+      data: args.svgData,
+      title: args.title || '',
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add to beginning of array (newest first)
+    this.displayContent.unshift(content);
+    
+    // Limit to max items
+    if (this.displayContent.length > this.maxContentItems) {
+      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+    }
+    
+    this.broadcastToClients({ type: 'content', data: this.displayContent });
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `SVG displayed successfully${args.title ? ` (${args.title})` : ''}`
+      }]
+    };
+  }
+
   logConnection(toolName, args) {
+    let preview;
+    
+    if (toolName === 'display_text') {
+      preview = args.text.substring(0, 50) + (args.text.length > 50 ? '...' : '');
+    } else if (toolName === 'display_image') {
+      preview = `Image (${args.mimeType || 'image/png'})`;
+    } else if (toolName === 'display_svg') {
+      preview = `SVG${args.title ? ` (${args.title})` : ''}`;
+    } else {
+      preview = `${toolName}`;
+    }
+    
     const logEntry = {
       id: uuidv4(),
       timestamp: new Date().toISOString(),
       tool: toolName,
-      preview: toolName === 'display_text' 
-        ? args.text.substring(0, 50) + (args.text.length > 50 ? '...' : '')
-        : `Image (${args.mimeType || 'image/png'})`
+      preview: preview
     };
     
     this.connectionLog.unshift(logEntry);

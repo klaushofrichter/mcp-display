@@ -64,6 +64,13 @@
                     style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);"
                   />
                 </div>
+                <div v-if="item.type === 'svg'" class="svg-content-inline">
+                  <div class="svg-title" v-if="item.title">{{ item.title }}</div>
+                  <div 
+                    v-html="item.data"
+                    style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); overflow: auto;"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -368,6 +375,28 @@ export default {
   max-height: 70vh;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.svg-content-inline {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e1e5e9;
+}
+
+.svg-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  font-size: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.svg-content-inline svg {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 
 .sidebar-header {

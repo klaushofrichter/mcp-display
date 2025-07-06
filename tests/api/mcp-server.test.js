@@ -17,18 +17,49 @@ describe('MCP Display Server', () => {
       expect(mimeType.startsWith('image/')).toBe(true)
     })
 
+    test('should validate SVG data', () => {
+      const svgData = '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="red"/></svg>'
+      const title = 'Test SVG'
+      
+      expect(typeof svgData).toBe('string')
+      expect(svgData.length).toBeGreaterThan(0)
+      expect(svgData.includes('<svg')).toBe(true)
+      expect(svgData.includes('</svg>')).toBe(true)
+      expect(typeof title).toBe('string')
+    })
+
     test('should handle connection logging', () => {
-      const logEntry = {
+      const textLogEntry = {
         id: 'test-123',
         timestamp: new Date().toISOString(),
         tool: 'display_text',
         preview: 'Test content'
       }
       
-      expect(logEntry.id).toBeDefined()
-      expect(logEntry.timestamp).toBeDefined()
-      expect(logEntry.tool).toBe('display_text')
-      expect(logEntry.preview).toBe('Test content')
+      const imageLogEntry = {
+        id: 'test-456',
+        timestamp: new Date().toISOString(),
+        tool: 'display_image',
+        preview: 'Image (image/png)'
+      }
+      
+      const svgLogEntry = {
+        id: 'test-789',
+        timestamp: new Date().toISOString(),
+        tool: 'display_svg',
+        preview: 'SVG (Test Title)'
+      }
+      
+      expect(textLogEntry.id).toBeDefined()
+      expect(textLogEntry.timestamp).toBeDefined()
+      expect(textLogEntry.tool).toBe('display_text')
+      expect(textLogEntry.preview).toBe('Test content')
+      
+      expect(imageLogEntry.tool).toBe('display_image')
+      expect(imageLogEntry.preview).toContain('Image')
+      
+      expect(svgLogEntry.tool).toBe('display_svg')
+      expect(svgLogEntry.preview).toContain('SVG')
     })
 
     test('should validate MCP tool schemas', () => {
@@ -66,10 +97,31 @@ describe('MCP Display Server', () => {
         }
       }
       
+      const displaySVGSchema = {
+        name: 'display_svg',
+        description: 'Display SVG graphics in the browser',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            svgData: {
+              type: 'string',
+              description: 'SVG markup as a string'
+            },
+            title: {
+              type: 'string',
+              description: 'Optional title for the SVG'
+            }
+          },
+          required: ['svgData']
+        }
+      }
+      
       expect(displayTextSchema.name).toBe('display_text')
       expect(displayTextSchema.inputSchema.required).toContain('text')
       expect(displayImageSchema.name).toBe('display_image')
       expect(displayImageSchema.inputSchema.required).toContain('imageData')
+      expect(displaySVGSchema.name).toBe('display_svg')
+      expect(displaySVGSchema.inputSchema.required).toContain('svgData')
     })
 
     test('should format timestamps correctly', () => {
@@ -140,6 +192,22 @@ describe('MCP Display Server', () => {
       supportedTypes.forEach(type => {
         expect(type.startsWith('image/')).toBe(true)
       })
+    })
+
+    test('should validate SVG content structure', () => {
+      const svgContent = {
+        id: 'svg-test-123',
+        type: 'svg',
+        data: '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="80" height="80" fill="blue"/></svg>',
+        title: 'Test SVG',
+        timestamp: new Date().toISOString()
+      }
+      
+      expect(svgContent.type).toBe('svg')
+      expect(svgContent.data).toContain('<svg')
+      expect(svgContent.data).toContain('</svg>')
+      expect(svgContent.title).toBe('Test SVG')
+      expect(svgContent.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
     })
   })
 }) 
