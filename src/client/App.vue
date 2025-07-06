@@ -58,7 +58,11 @@
                   <pre>{{ item.data }}</pre>
                 </div>
                 <div v-if="item.type === 'image'" class="image-content-inline">
-                  <img :src="getImageSrc(item)" alt="MCP Display Image" />
+                  <img 
+                    :src="getImageSrc(item)" 
+                    alt="MCP Display Image"
+                    style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);"
+                  />
                 </div>
               </div>
             </div>

@@ -63,7 +63,10 @@ class MCPDisplayServer {
     this.app.post('/mcp', async (req, res) => {
       try {
         const request = req.body;
-        console.log('MCP Request received:', JSON.stringify(request, null, 2));
+        
+        // Create a truncated version for logging
+        const logRequest = this.truncateRequestForLogging(request);
+        console.log('MCP Request received:', JSON.stringify(logRequest, null, 2));
         
         // Handle MCP protocol messages
         const response = await this.handleMCPRequest(request);
@@ -80,6 +83,23 @@ class MCPDisplayServer {
         });
       }
     });
+  }
+
+  truncateRequestForLogging(request) {
+    // Create a deep copy of the request for logging
+    const logRequest = JSON.parse(JSON.stringify(request));
+    
+    // If this is a display_image call, truncate the imageData
+    if (logRequest.method === 'tools/call' && 
+        logRequest.params?.name === 'display_image' && 
+        logRequest.params?.arguments?.imageData) {
+      
+      const imageData = logRequest.params.arguments.imageData;
+      const truncatedData = imageData.substring(0, 100) + '... [truncated ' + (imageData.length - 100) + ' more characters]';
+      logRequest.params.arguments.imageData = truncatedData;
+    }
+    
+    return logRequest;
   }
 
   async handleMCPRequest(request) {

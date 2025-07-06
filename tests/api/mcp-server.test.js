@@ -81,6 +81,30 @@ describe('MCP Display Server', () => {
       expect(formattedTime).toBeDefined()
       expect(formattedDateTime).toBeDefined()
     })
+
+    test('should return health status', () => {
+      const healthResponse = {
+        status: 'healthy',
+        uptime: '123s',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        server: 'mcp-display-server',
+        stats: {
+          contentItems: 0,
+          connections: 0,
+          websocketClients: 1
+        }
+      }
+      
+      expect(healthResponse.status).toBe('healthy')
+      expect(healthResponse.version).toBe('1.0.0')
+      expect(healthResponse.server).toBe('mcp-display-server')
+      expect(typeof healthResponse.stats).toBe('object')
+      expect(typeof healthResponse.stats.contentItems).toBe('number')
+      expect(typeof healthResponse.stats.connections).toBe('number')
+      expect(typeof healthResponse.stats.websocketClients).toBe('number')
+      expect(healthResponse.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+    })
   })
 
   describe('Data Validation', () => {
