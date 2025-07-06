@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "nmp",
       "args": [ "start" ],
-      "cwd": "/Users/klaushofrichter/Development/een-mcp"
+      "cwd": "/Users/klaushofrichter/Development/een-mcp",
       "env": {}
     },
     "mcp-display": {

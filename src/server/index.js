@@ -267,8 +267,17 @@ class MCPDisplayServer {
   start(port = 8080) {
     this.server.listen(port, () => {
       console.log(`MCP Display Server running on port ${port}`);
-      console.log(`Web interface: http://localhost:${port}`);
-      console.log(`MCP HTTP endpoint: http://localhost:${port}/mcp`);
+      
+      // In development, show the correct URLs (through Vite proxy)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Web interface: http://localhost:3000`);
+        console.log(`MCP HTTP endpoint: http://localhost:3000/mcp`);
+        console.log(`API endpoints: http://localhost:3000/api/*`);
+        console.log(`(Proxied from Vite dev server to port ${port})`);
+      } else {
+        console.log(`Web interface: http://localhost:${port}`);
+        console.log(`MCP HTTP endpoint: http://localhost:${port}/mcp`);
+      }
     });
   }
 }
