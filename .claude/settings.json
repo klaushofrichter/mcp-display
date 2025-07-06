@@ -2,14 +2,13 @@
   "claude.mcpServers": {
     "een-mcp-stdio": {
       "type": "stdio",
-      "command": "nmp",
-      "args": [ "start" ],
-      "cwd": "/Users/klaushofrichter/Development/een-mcp"
+      "command": "npm",
+      "args": [ "start", "--prefix /Users/klaushofrichter/Development/een-mcp" ],
       "env": {}
     },
     "mcp-display": {
       "transport": "http",
-      "url": "http://localhost:3000/mcp"
+      "url": "http://localhost:8080/mcp"
     }
   }
 }

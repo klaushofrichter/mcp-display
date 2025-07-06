@@ -81,8 +81,8 @@ export default {
     
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      // In development, connect to the MCP server on port 8080
-      const wsUrl = `${protocol}//localhost:8080`
+      // Connect to the same host and port as the web page, with /ws path
+      const wsUrl = `${protocol}//${window.location.host}/ws`
       
       websocket.value = new WebSocket(wsUrl)
       
@@ -123,7 +123,7 @@ export default {
     
     const clearDisplay = async () => {
       try {
-        await fetch('http://localhost:8080/api/clear', { method: 'POST' })
+        await fetch('/api/clear', { method: 'POST' })
         displayContent.value = []
       } catch (error) {
         console.error('Error clearing display:', error)
@@ -145,14 +145,14 @@ export default {
     const loadInitialData = async () => {
       try {
         // Load current content
-        const contentResponse = await fetch('http://localhost:8080/api/content')
+        const contentResponse = await fetch('/api/content')
         const contentData = await contentResponse.json()
         if (contentData.content) {
           displayContent.value = Array.isArray(contentData.content) ? contentData.content : []
         }
         
         // Load connection log
-        const connectionsResponse = await fetch('http://localhost:8080/api/connections')
+        const connectionsResponse = await fetch('/api/connections')
         const connectionsData = await connectionsResponse.json()
         connectionLog.value = connectionsData.connections || []
       } catch (error) {

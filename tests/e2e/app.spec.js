@@ -2,6 +2,23 @@ import { test, expect } from '@playwright/test'
 
 test.describe('MCP Display Application', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock API endpoints to return empty data by default
+    await page.route('/api/content', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ content: [] })
+      })
+    })
+    
+    await page.route('/api/connections', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ connections: [] })
+      })
+    })
+    
     await page.goto('/')
   })
 
@@ -47,6 +64,15 @@ test.describe('MCP Display Application', () => {
 
 test.describe('MCP Display Content Handling', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock API endpoints to return empty data by default
+    await page.route('/api/connections', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ connections: [] })
+      })
+    })
+    
     await page.goto('/')
   })
 
@@ -57,11 +83,12 @@ test.describe('MCP Display Content Handling', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          content: {
+          content: [{
+            id: 'test-1',
             type: 'text',
             data: 'Hello, World!',
             timestamp: new Date().toISOString()
-          }
+          }]
         })
       })
     })
@@ -70,9 +97,9 @@ test.describe('MCP Display Content Handling', () => {
     await page.reload()
     
     // Check that text content is displayed
-    await expect(page.locator('.content-display')).toBeVisible()
+    await expect(page.locator('.content-list')).toBeVisible()
     await expect(page.locator('.content-type')).toContainText('TEXT')
-    await expect(page.locator('.text-content pre')).toContainText('Hello, World!')
+    await expect(page.locator('.text-content-inline pre')).toContainText('Hello, World!')
   })
 
   test('should handle image content display', async ({ page }) => {
@@ -84,12 +111,13 @@ test.describe('MCP Display Content Handling', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          content: {
+          content: [{
+            id: 'test-2',
             type: 'image',
             data: base64Image,
             mimeType: 'image/png',
             timestamp: new Date().toISOString()
-          }
+          }]
         })
       })
     })
@@ -98,10 +126,10 @@ test.describe('MCP Display Content Handling', () => {
     await page.reload()
     
     // Check that image content is displayed
-    await expect(page.locator('.content-display')).toBeVisible()
+    await expect(page.locator('.content-list')).toBeVisible()
     await expect(page.locator('.content-type')).toContainText('IMAGE')
-    await expect(page.locator('.image-content img')).toBeVisible()
-    await expect(page.locator('.image-content img')).toHaveAttribute('src', `data:image/png;base64,${base64Image}`)
+    await expect(page.locator('.image-content-inline img')).toBeVisible()
+    await expect(page.locator('.image-content-inline img')).toHaveAttribute('src', `data:image/png;base64,${base64Image}`)
   })
 
   test('should handle connection log structure', async ({ page }) => {

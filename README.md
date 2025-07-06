@@ -130,7 +130,7 @@ npm start
 
 ### Accessing the Interface
 
-1. Open your browser and navigate to `http://localhost:8080`
+1. Open your browser and navigate to `http://localhost:3000`
 2. You'll see the MCP Display interface with:
    - Main display area (initially empty)
    - Sidebar with connection log
@@ -187,7 +187,7 @@ Displays a base64-encoded image in the browser.
 ### MCP Client Integration
 
 To use this server with an MCP client, configure the client to connect to:
-- **HTTP Endpoint**: `http://localhost:8080/mcp`
+- **HTTP Endpoint**: `http://localhost:3000/mcp` (proxied to MCP server)
 - **Transport**: HTTP POST requests with JSON-RPC 2.0 format
 
 ## Testing
@@ -245,7 +245,7 @@ npm run test:install
 
 1. **Install dependencies**: `npm install`
 2. **Start development server**: `npm run dev`
-3. **Open browser**: Navigate to `http://localhost:3000` (client) or `http://localhost:8080` (server)
+3. **Open browser**: Navigate to `http://localhost:3000` (all services are proxied through this port)
 
 ### Code Structure Guidelines
 

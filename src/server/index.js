@@ -8,7 +8,10 @@ class MCPDisplayServer {
   constructor() {
     this.app = express();
     this.server = createServer(this.app);
-    this.wss = new WebSocketServer({ server: this.server });
+    this.wss = new WebSocketServer({ 
+      server: this.server,
+      path: '/ws'
+    });
     
     this.clients = new Map();
     this.connectionLog = [];

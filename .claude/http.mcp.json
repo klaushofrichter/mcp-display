@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "display-server": {
-      "type": "http", 
-      "url": "http://localhost:8080"
-    }
-  }
-}

@@ -7,6 +7,7 @@
 * The MCP server offers these tools to MCP clients:
   * Text display: the MCP client provides simple ASCII text that is then shown in a conected browser
   * Image display: the MCP client provides base64 encoded image data that is then shown in the connected browser
+  * SVG display: the MCP client provides an SVG object that is shown in the connected browser
 * There is a button on the screen that clears the window
 * There is a sidebar that shows a log of MCP client connections
 * We build a single page web application 
