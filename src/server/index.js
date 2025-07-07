@@ -124,13 +124,13 @@ class MCPDisplayServer {
       console.log('Headers:', JSON.stringify(req.headers, null, 2));
       console.log('Body:', JSON.stringify(req.body, null, 2));
       console.log('--------------------------');
-
+      
       const sessionId = req.headers['mcp-session-id'];
       let transport;
 
       if (typeof sessionId === 'string' && this.transports.has(sessionId)) {
         transport = this.transports.get(sessionId);
-      } else if (!sessionId && isInitializeRequest(req.body)) {
+      } else if (!sessionId && req.body?.method === 'initialize') {
         const newSessionId = uuidv4();
         transport = new StreamableHTTPServerTransport({
           sessionId: newSessionId,

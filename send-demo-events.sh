@@ -33,7 +33,7 @@ curl -si -X POST http://localhost:8080/mcp \
     }
   }' > "$response_file"
 
-SESSION_ID=$(grep -i 'mcp-session-id' "$response_file" | awk -F': ' '{print $2}' | tr -d '\r')
+SESSION_ID=$(grep -i '^mcp-session-id:' "$response_file" | cut -d ' ' -f 2 | tr -d '\r')
 rm "$response_file"
 
 if [ -z "$SESSION_ID" ]; then
@@ -65,6 +65,7 @@ curl -s -X POST http://localhost:8080/mcp \
     }
   }' > /dev/null
 
+exit
 sleep 2
 
 # 2. Display SVG graphics
