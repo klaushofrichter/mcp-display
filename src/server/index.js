@@ -172,14 +172,6 @@ class MCPDisplayServer {
       const clientId = uuidv4();
       this.clients.set(clientId, ws);
       
-      // Send current content to new client
-      if (this.displayContent.length > 0) {
-        ws.send(JSON.stringify({
-          type: 'content',
-          data: this.displayContent
-        }));
-      }
-      
       ws.on('close', () => {
         this.clients.delete(clientId);
       });
@@ -219,7 +211,8 @@ class MCPDisplayServer {
     const contentItem = {
       id: uuidv4(),
       type: 'image',
-      data: `data:${mimeType};base64,${imageData}`,
+      data: imageData,
+      mimeType: mimeType,
       timestamp: new Date().toISOString()
     };
     
