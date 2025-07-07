@@ -294,6 +294,7 @@ class MCPDisplayServer {
   }
   
   broadcastToClients(message) {
+    console.log(`Broadcasting message type '${message.type}' to ${this.clients.size} clients.`);
     const messageString = JSON.stringify(message);
     for (const client of this.clients.values()) {
       if (client.readyState === 1) { // WebSocket.OPEN

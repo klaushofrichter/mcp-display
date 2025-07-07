@@ -71,7 +71,6 @@ curl -s -X POST http://localhost:3000/mcp \
     }
   }' > /dev/null
 
-exit
 sleep 2
 
 # 2. Display SVG graphics
