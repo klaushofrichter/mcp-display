@@ -20,7 +20,8 @@ echo ""
 
 # Initialize session and get session ID
 echo "🤝 Initializing MCP session..."
-SESSION_ID=$(curl -si -X POST http://localhost:8080/mcp \
+response_file=$(mktemp)
+curl -si -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -30,7 +31,10 @@ SESSION_ID=$(curl -si -X POST http://localhost:8080/mcp \
       "protocolVersion": "2024-11-05",
       "capabilities": {}
     }
-  }' | grep -i 'mcp-session-id' | awk -F': ' '{print $2}' | tr -d '\r')
+  }' > "$response_file"
+
+SESSION_ID=$(grep -i 'mcp-session-id' "$response_file" | awk -F': ' '{print $2}' | tr -d '\r')
+rm "$response_file"
 
 if [ -z "$SESSION_ID" ]; then
     echo "❌ Failed to get session ID"
