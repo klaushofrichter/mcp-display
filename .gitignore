@@ -140,3 +140,7 @@ vite.config.ts.timestamp-*
 
 # playwright
 playwright-report/
+
+# vi swaps
+*.swp
+

@@ -365,11 +365,11 @@ Returns the currently displayed content.
     {
       "id": "uuid",
       "type": "text|image|svg",
-      "data": "content data",
-      "timestamp": "2024-01-01T00:00:00.000Z",
+    "data": "content data",
+    "timestamp": "2024-01-01T00:00:00.000Z",
       "mimeType": "image/png", // only for images
       "title": "Optional title" // only for SVG
-    }
+  }
   ]
 }
 ```
