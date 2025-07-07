@@ -23,6 +23,7 @@ echo "🤝 Initializing MCP session..."
 response_file=$(mktemp)
 curl -si -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{
     "jsonrpc": "2.0",
     "id": 0,
@@ -34,6 +35,7 @@ curl -si -X POST http://localhost:3000/mcp \
   }' > "$response_file"
 
 SESSION_ID=$(grep -i '^mcp-session-id:' "$response_file" | cut -d ' ' -f 2 | tr -d '\r')
+cat $response_file
 rm "$response_file"
 
 if [ -z "$SESSION_ID" ]; then
