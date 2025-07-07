@@ -3,6 +3,9 @@ import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { v4 as uuidv4 } from 'uuid';
+import { McpServer, StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/transport';
+import { z } from 'zod';
 
 class MCPDisplayServer {
   constructor() {
@@ -18,13 +21,68 @@ class MCPDisplayServer {
     this.displayContent = [];
     this.maxContentItems = 100;
     this.startTime = new Date();
+    this.transports = new Map();
     
     this.setupExpress();
     this.setupWebSocket();
   }
 
+  async createMcpServer() {
+    const mcpServer = new McpServer({
+      name: 'mcp-display-server',
+      version: '1.0.0',
+    });
+
+    mcpServer.registerTool(
+      'display_text',
+      {
+        description: 'Display text content in the browser',
+        inputSchema: z.object({
+          text: z.string().describe('The text to display'),
+        }),
+      },
+      async (args) => {
+        this.logConnection('display_text', args);
+        return this.handleDisplayText(args);
+      }
+    );
+
+    mcpServer.registerTool(
+      'display_image',
+      {
+        description: 'Display base64 encoded image in the browser',
+        inputSchema: z.object({
+          imageData: z.string().describe('Base64 encoded image data'),
+          mimeType: z.string().describe('MIME type of the image (e.g., image/png, image/jpeg)').default('image/png'),
+        }),
+      },
+      async (args) => {
+        this.logConnection('display_image', args);
+        return this.handleDisplayImage(args);
+      }
+    );
+
+    mcpServer.registerTool(
+      'display_svg',
+      {
+        description: 'Display SVG graphics in the browser',
+        inputSchema: z.object({
+          svgData: z.string().describe('SVG markup as a string'),
+          title: z.string().describe('Optional title for the SVG').default(''),
+        }),
+      },
+      async (args) => {
+        this.logConnection('display_svg', args);
+        return this.handleDisplaySVG(args);
+      }
+    );
+    return mcpServer;
+  }
+
   setupExpress() {
-    this.app.use(cors());
+    this.app.use(cors({
+      exposedHeaders: ['mcp-session-id'],
+    }));
     this.app.use(express.json({ limit: '50mb' }));
     this.app.use(express.static('dist'));
     
@@ -59,177 +117,53 @@ class MCPDisplayServer {
       res.json({ success: true });
     });
     
-    // MCP HTTP transport endpoint
     this.app.post('/mcp', async (req, res) => {
-      try {
-        const request = req.body;
-        
-        // Create a truncated version for logging
-        const logRequest = this.truncateRequestForLogging(request);
-        console.log('MCP Request received:', JSON.stringify(logRequest, null, 2));
-        
-        // Handle MCP protocol messages
-        const response = await this.handleMCPRequest(request);
-        res.json(response);
-      } catch (error) {
-        console.error('MCP Request error:', error);
-        res.status(500).json({ 
-          jsonrpc: '2.0',
-          id: req.body.id || null,
-          error: { 
-            code: -32000,
-            message: error.message 
-          }
+      const sessionId = req.headers['mcp-session-id'];
+      let transport;
+
+      if (typeof sessionId === 'string' && this.transports.has(sessionId)) {
+        transport = this.transports.get(sessionId);
+      } else if (!sessionId && isInitializeRequest(req.body)) {
+        const newSessionId = uuidv4();
+        transport = new StreamableHTTPServerTransport({
+          sessionId: newSessionId,
         });
+        this.transports.set(newSessionId, transport);
+
+        transport.onclose = () => {
+          this.transports.delete(newSessionId);
+        };
+
+        const mcpServer = await this.createMcpServer();
+        await mcpServer.connect(transport);
+      } else {
+        res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: No valid session ID provided',
+          },
+          id: null,
+        });
+        return;
       }
+
+      await transport.handleRequest(req, res, req.body);
     });
-  }
 
-  truncateRequestForLogging(request) {
-    // Create a deep copy of the request for logging
-    const logRequest = JSON.parse(JSON.stringify(request));
-    
-    // If this is a display_image call, truncate the imageData
-    if (logRequest.method === 'tools/call' && 
-        logRequest.params?.name === 'display_image' && 
-        logRequest.params?.arguments?.imageData) {
-      
-      const imageData = logRequest.params.arguments.imageData;
-      const truncatedData = imageData.substring(0, 100) + '... [truncated ' + (imageData.length - 100) + ' more characters]';
-      logRequest.params.arguments.imageData = truncatedData;
-    }
-    
-    // If this is a display_svg call, truncate the svgData if it's very long
-    if (logRequest.method === 'tools/call' && 
-        logRequest.params?.name === 'display_svg' && 
-        logRequest.params?.arguments?.svgData) {
-      
-      const svgData = logRequest.params.arguments.svgData;
-      if (svgData.length > 500) {
-        const truncatedData = svgData.substring(0, 500) + '... [truncated ' + (svgData.length - 500) + ' more characters]';
-        logRequest.params.arguments.svgData = truncatedData;
+    const handleSessionRequest = async (req, res) => {
+      const sessionId = req.headers['mcp-session-id'];
+      if (typeof sessionId !== 'string' || !this.transports.has(sessionId)) {
+        res.status(400).send('Invalid or missing session ID');
+        return;
       }
-    }
+      
+      const transport = this.transports.get(sessionId);
+      await transport.handleRequest(req, res);
+    };
     
-    return logRequest;
-  }
-
-  async handleMCPRequest(request) {
-    const { method, params, id } = request;
-    
-    switch (method) {
-      case 'initialize':
-        return {
-          jsonrpc: '2.0',
-          id: id,
-          result: {
-            protocolVersion: '2024-11-05',
-            capabilities: {
-              tools: {}
-            },
-            serverInfo: {
-              name: 'mcp-display-server',
-              version: '1.0.0'
-            }
-          }
-        };
-      
-      case 'notifications/initialized':
-        // Client has finished initialization
-        return null; // No response needed for notifications
-      
-      case 'tools/list':
-        return {
-          jsonrpc: '2.0',
-          id: id,
-          result: {
-            tools: [
-              {
-                name: 'display_text',
-                description: 'Display text content in the browser',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    text: {
-                      type: 'string',
-                      description: 'The text to display'
-                    }
-                  },
-                  required: ['text']
-                }
-              },
-              {
-                name: 'display_image',
-                description: 'Display base64 encoded image in the browser',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    imageData: {
-                      type: 'string',
-                      description: 'Base64 encoded image data'
-                    },
-                    mimeType: {
-                      type: 'string',
-                      description: 'MIME type of the image (e.g., image/png, image/jpeg)',
-                      default: 'image/png'
-                    }
-                  },
-                  required: ['imageData']
-                }
-              },
-              {
-                name: 'display_svg',
-                description: 'Display SVG graphics in the browser',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    svgData: {
-                      type: 'string',
-                      description: 'SVG markup as a string'
-                    },
-                    title: {
-                      type: 'string',
-                      description: 'Optional title for the SVG',
-                      default: ''
-                    }
-                  },
-                  required: ['svgData']
-                }
-              }
-            ]
-          }
-        };
-      
-      case 'tools/call':
-        const { name, arguments: args } = params;
-        
-        // Log the connection
-        this.logConnection(name, args);
-        
-        let result;
-        switch (name) {
-          case 'display_text':
-            result = this.handleDisplayText(args);
-            break;
-          case 'display_image':
-            result = this.handleDisplayImage(args);
-            break;
-          case 'display_svg':
-            result = this.handleDisplaySVG(args);
-            break;
-          default:
-            throw new Error(`Unknown tool: ${name}`);
-        }
-        
-        return {
-          jsonrpc: '2.0',
-          id: id,
-          result: result
-        };
-      
-      default:
-        throw new Error(`Unknown method: ${method}`);
-    }
+    this.app.get('/mcp', handleSessionRequest);
+    this.app.delete('/mcp', handleSessionRequest);
   }
 
   setupWebSocket() {
@@ -248,133 +182,133 @@ class MCPDisplayServer {
       ws.on('close', () => {
         this.clients.delete(clientId);
       });
+      
+      ws.on('error', (error) => {
+        console.error(`WebSocket error for client ${clientId}:`, error);
+      });
     });
   }
 
-
-
   handleDisplayText(args) {
-    const content = {
+    const { text } = args;
+    const contentItem = {
       id: uuidv4(),
       type: 'text',
-      data: args.text,
+      data: text,
       timestamp: new Date().toISOString()
     };
     
-    // Add to beginning of array (newest first)
-    this.displayContent.unshift(content);
-    
-    // Limit to max items
+    this.displayContent.unshift(contentItem);
     if (this.displayContent.length > this.maxContentItems) {
-      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+      this.displayContent.pop();
     }
     
-    this.broadcastToClients({ type: 'content', data: this.displayContent });
+    this.broadcastToClients({
+      type: 'content',
+      data: [contentItem]
+    });
     
     return {
-      content: [{
-        type: 'text',
-        text: `Text displayed successfully: ${args.text.substring(0, 100)}${args.text.length > 100 ? '...' : ''}`
-      }]
+      content: [{ type: 'text', text: `Displayed text of length ${text.length}` }]
     };
   }
-
+  
   handleDisplayImage(args) {
-    const content = {
+    const { imageData, mimeType } = args;
+    const contentItem = {
       id: uuidv4(),
       type: 'image',
-      data: args.imageData,
-      mimeType: args.mimeType || 'image/png',
+      data: `data:${mimeType};base64,${imageData}`,
       timestamp: new Date().toISOString()
     };
     
-    // Add to beginning of array (newest first)
-    this.displayContent.unshift(content);
-    
-    // Limit to max items
+    this.displayContent.unshift(contentItem);
     if (this.displayContent.length > this.maxContentItems) {
-      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+      this.displayContent.pop();
     }
     
-    this.broadcastToClients({ type: 'content', data: this.displayContent });
+    this.broadcastToClients({
+      type: 'content',
+      data: [contentItem]
+    });
     
     return {
-      content: [{
-        type: 'text',
-        text: `Image displayed successfully (${args.mimeType || 'image/png'})`
-      }]
+      content: [{ type: 'text', text: 'Image displayed' }]
     };
   }
 
   handleDisplaySVG(args) {
-    const content = {
+    const { svgData, title } = args;
+    const contentItem = {
       id: uuidv4(),
       type: 'svg',
-      data: args.svgData,
-      title: args.title || '',
+      data: svgData,
+      title: title,
       timestamp: new Date().toISOString()
     };
-    
-    // Add to beginning of array (newest first)
-    this.displayContent.unshift(content);
-    
-    // Limit to max items
+
+    this.displayContent.unshift(contentItem);
     if (this.displayContent.length > this.maxContentItems) {
-      this.displayContent = this.displayContent.slice(0, this.maxContentItems);
+      this.displayContent.pop();
     }
     
-    this.broadcastToClients({ type: 'content', data: this.displayContent });
-    
+    this.broadcastToClients({
+      type: 'content',
+      data: [contentItem]
+    });
+
     return {
-      content: [{
-        type: 'text',
-        text: `SVG displayed successfully${args.title ? ` (${args.title})` : ''}`
-      }]
+      content: [{ type: 'text', text: 'SVG displayed' }]
     };
   }
 
   logConnection(toolName, args) {
-    let preview;
+    const truncatedArgs = JSON.parse(JSON.stringify(args));
     
-    if (toolName === 'display_text') {
-      preview = args.text.substring(0, 50) + (args.text.length > 50 ? '...' : '');
-    } else if (toolName === 'display_image') {
-      preview = `Image (${args.mimeType || 'image/png'})`;
-    } else if (toolName === 'display_svg') {
-      preview = `SVG${args.title ? ` (${args.title})` : ''}`;
-    } else {
-      preview = `${toolName}`;
+    if (toolName === 'display_image' && truncatedArgs.imageData) {
+      const imageData = truncatedArgs.imageData;
+      if (imageData.length > 100) {
+        truncatedArgs.imageData = imageData.substring(0, 100) + '... [truncated ' + (imageData.length - 100) + ' more characters]';
+      }
     }
     
+    if (toolName === 'display_svg' && truncatedArgs.svgData) {
+      const svgData = truncatedArgs.svgData;
+      if (svgData.length > 500) {
+        truncatedArgs.svgData = svgData.substring(0, 500) + '... [truncated ' + (svgData.length - 500) + ' more characters]';
+      }
+    }
+
     const logEntry = {
       id: uuidv4(),
       timestamp: new Date().toISOString(),
       tool: toolName,
-      preview: preview
+      args: truncatedArgs
     };
     
     this.connectionLog.unshift(logEntry);
-    
-    // Keep only last 100 entries
-    if (this.connectionLog.length > 100) {
-      this.connectionLog = this.connectionLog.slice(0, 100);
+    if (this.connectionLog.length > this.maxContentItems) {
+      this.connectionLog.pop();
     }
     
-    this.broadcastToClients({ type: 'connection', data: logEntry });
-  }
-
-  broadcastToClients(message) {
-    const messageStr = JSON.stringify(message);
-    this.clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(messageStr);
-      }
+    this.broadcastToClients({
+      type: 'connection',
+      data: [logEntry]
     });
+  }
+  
+  broadcastToClients(message) {
+    const messageString = JSON.stringify(message);
+    for (const client of this.clients.values()) {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(messageString);
+      }
+    }
   }
 
   start(port = 8080) {
     this.server.listen(port, () => {
-      console.log(`MCP Display Server running on port ${port}`);
+      console.log(`MCP Display Server running on http://localhost:${port}`);
       
       // In development, show the correct URLs (through Vite proxy)
       if (process.env.NODE_ENV !== 'production') {
