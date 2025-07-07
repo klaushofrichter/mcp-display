@@ -32,5 +32,5 @@
 # Other Infornation
 * We use best practices for software design and project structure
 * We prefer readability of code over efficiency and performance
-* We use only well known 3rd party software packages
+* We use only well known 3rd party software packages, and use the latest stabke version
 * We do not edit the prd.md file
