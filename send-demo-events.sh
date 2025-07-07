@@ -30,6 +30,9 @@ curl -si -X POST http://localhost:3000/mcp \
     "method": "initialize",
     "params": {
       "protocolVersion": "2024-11-05",
+      "clientInfo": {
+        "name": "mcp-display-demo-script"
+      },
       "capabilities": {}
     }
   }' > "$response_file"
