@@ -23,7 +23,9 @@ class MCPDisplayServer {
     this.maxContentItems = 100;
     this.startTime = new Date();
     this.transports = new Map();
-    this.mcpServer = null;
+
+    this.setupExpress();
+    this.setupWebSocket();
   }
 
   async createMcpServer() {
@@ -41,7 +43,6 @@ class MCPDisplayServer {
         }),
       },
       async (args) => {
-        console.log("--- Executing 'display_text' tool handler ---");
         this.logConnection('display_text', args);
         return this.handleDisplayText(args);
       }
@@ -118,12 +119,6 @@ class MCPDisplayServer {
     });
     
     this.app.post('/mcp', async (req, res) => {
-      console.log('--- MCP Request Received ---');
-      console.log('Timestamp:', new Date().toISOString());
-      console.log('Headers:', JSON.stringify(req.headers, null, 2));
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-      console.log('--------------------------');
-      
       const sessionId = req.headers['mcp-session-id'];
       let transport;
 
@@ -139,7 +134,8 @@ class MCPDisplayServer {
             };
           },
         });
-        await this.mcpServer.connect(transport);
+        const mcpServer = await this.createMcpServer();
+        await mcpServer.connect(transport);
       } else {
         res.status(400).json({
           jsonrpc: '2.0',
@@ -186,7 +182,6 @@ class MCPDisplayServer {
   }
 
   handleDisplayText(args) {
-    console.log("--- Handling display_text ---");
     const { text } = args;
     const contentItem = {
       id: uuidv4(),
@@ -261,7 +256,6 @@ class MCPDisplayServer {
   }
 
   logConnection(toolName, args) {
-    console.log(`--- Logging connection for tool: ${toolName} ---`);
     const truncatedArgs = JSON.parse(JSON.stringify(args));
     
     if (toolName === 'display_image' && truncatedArgs.imageData) {
@@ -297,7 +291,6 @@ class MCPDisplayServer {
   }
   
   broadcastToClients(message) {
-    console.log(`Broadcasting message type '${message.type}' to ${this.clients.size} clients.`);
     const messageString = JSON.stringify(message);
     for (const client of this.clients.values()) {
       if (client.readyState === 1) { // WebSocket.OPEN
@@ -306,11 +299,7 @@ class MCPDisplayServer {
     }
   }
 
-  async start(port = 8080) {
-    this.mcpServer = await this.createMcpServer();
-    this.setupExpress();
-    this.setupWebSocket();
-
+  start(port = 8080) {
     this.server.listen(port, () => {
       console.log(`MCP Display Server running on http://localhost:${port}`);
       
