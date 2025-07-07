@@ -5,12 +5,12 @@ set -e
 # This script demonstrates all three content types: text, image, and SVG
 
 echo "🚀 Starting MCP Display Demo..."
-echo "Make sure the server is running on port 8080"
+echo "Make sure the server is running on port 3000"
 echo ""
 
 # Check if server is running
-if ! curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
-    echo "❌ Server is not running on port 8080"
+if ! curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
+    echo "❌ Server is not running on port 3000"
     echo "Please start the server with: npm run dev"
     exit 1
 fi
@@ -21,7 +21,7 @@ echo ""
 # Initialize session and get session ID
 echo "🤝 Initializing MCP session..."
 response_file=$(mktemp)
-curl -si -X POST http://localhost:8080/mcp \
+curl -si -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -45,12 +45,12 @@ echo ""
 
 # Clear existing content
 echo "🧹 Clearing existing content..."
-curl -s -X POST http://localhost:8080/api/clear > /dev/null
+curl -s -X POST http://localhost:3000/api/clear > /dev/null
 sleep 1
 
 # 1. Display welcome text
 echo "📝 Displaying welcome text..."
-curl -s -X POST http://localhost:8080/mcp \
+curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
@@ -70,7 +70,7 @@ sleep 2
 
 # 2. Display SVG graphics
 echo "🎨 Displaying SVG graphics..."
-curl -s -X POST http://localhost:8080/mcp \
+curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
@@ -93,7 +93,7 @@ echo "🖼️  Displaying water lily image..."
 if [ -f "public/water.png" ]; then
     # Convert image to base64 and send
     IMAGE_B64=$(base64 -i public/water.png | tr -d '\n')
-    curl -s -X POST http://localhost:8080/mcp \
+    curl -s -X POST http://localhost:3000/mcp \
       -H "Content-Type: application/json" \
       -H "mcp-session-id: $SESSION_ID" \
       -d "{
@@ -110,7 +110,7 @@ if [ -f "public/water.png" ]; then
       }" > /dev/null
 else
     echo "⚠️ water.png not found, using placeholder image..."
-    curl -s -X POST http://localhost:8080/mcp \
+    curl -s -X POST http://localhost:3000/mcp \
       -H "Content-Type: application/json" \
       -H "mcp-session-id: $SESSION_ID" \
       -d '{
@@ -131,7 +131,7 @@ sleep 2
 
 # 4. Display completion message
 echo "🎉 Displaying completion message..."
-curl -s -X POST http://localhost:8080/mcp \
+curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
