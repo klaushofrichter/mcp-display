@@ -31,7 +31,8 @@ curl -si -X POST http://localhost:3000/mcp \
     "params": {
       "protocolVersion": "2024-11-05",
       "clientInfo": {
-        "name": "mcp-display-demo-script"
+        "name": "mcp-display-demo-script",
+        "version": "1.0.0"
       },
       "capabilities": {}
     }
