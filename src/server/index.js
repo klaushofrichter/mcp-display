@@ -41,6 +41,7 @@ class MCPDisplayServer {
         }),
       },
       async (args) => {
+        console.log("--- Executing 'display_text' tool handler ---");
         this.logConnection('display_text', args);
         return this.handleDisplayText(args);
       }
@@ -185,6 +186,7 @@ class MCPDisplayServer {
   }
 
   handleDisplayText(args) {
+    console.log("--- Handling display_text ---");
     const { text } = args;
     const contentItem = {
       id: uuidv4(),
@@ -259,6 +261,7 @@ class MCPDisplayServer {
   }
 
   logConnection(toolName, args) {
+    console.log(`--- Logging connection for tool: ${toolName} ---`);
     const truncatedArgs = JSON.parse(JSON.stringify(args));
     
     if (toolName === 'display_image' && truncatedArgs.imageData) {
