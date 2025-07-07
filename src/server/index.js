@@ -129,16 +129,15 @@ class MCPDisplayServer {
       if (typeof sessionId === 'string' && this.transports.has(sessionId)) {
         transport = this.transports.get(sessionId);
       } else if (!sessionId && req.body?.method === 'initialize') {
-        const newSessionId = uuidv4();
         transport = new StreamableHTTPServerTransport({
-          sessionId: newSessionId,
+          sessionIdGenerator: uuidv4,
+          onsessioninitialized: (newSessionId) => {
+            this.transports.set(newSessionId, transport);
+            transport.onclose = () => {
+              this.transports.delete(newSessionId);
+            };
+          },
         });
-        this.transports.set(newSessionId, transport);
-
-        transport.onclose = () => {
-          this.transports.delete(newSessionId);
-        };
-
         await this.mcpServer.connect(transport);
       } else {
         res.status(400).json({
