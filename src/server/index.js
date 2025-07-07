@@ -23,9 +23,7 @@ class MCPDisplayServer {
     this.maxContentItems = 100;
     this.startTime = new Date();
     this.transports = new Map();
-    
-    this.setupExpress();
-    this.setupWebSocket();
+    this.mcpServer = null;
   }
 
   async createMcpServer() {
@@ -141,8 +139,7 @@ class MCPDisplayServer {
           this.transports.delete(newSessionId);
         };
 
-        const mcpServer = await this.createMcpServer();
-        await mcpServer.connect(transport);
+        await this.mcpServer.connect(transport);
       } else {
         res.status(400).json({
           jsonrpc: '2.0',
@@ -306,7 +303,11 @@ class MCPDisplayServer {
     }
   }
 
-  start(port = 8080) {
+  async start(port = 8080) {
+    this.mcpServer = await this.createMcpServer();
+    this.setupExpress();
+    this.setupWebSocket();
+
     this.server.listen(port, () => {
       console.log(`MCP Display Server running on http://localhost:${port}`);
       
@@ -325,5 +326,5 @@ class MCPDisplayServer {
 }
 
 // Start the server
-const server = new MCPDisplayServer();
-server.start(process.env.PORT || 8080); 
+const mcpDisplayServer = new MCPDisplayServer();
+mcpDisplayServer.start(process.env.PORT || 8080); 
