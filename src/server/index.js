@@ -3,8 +3,9 @@ import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { v4 as uuidv4 } from 'uuid';
-import { McpServer, StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/transport';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 class MCPDisplayServer {

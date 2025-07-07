@@ -18,6 +18,27 @@ fi
 echo "✅ Server is running!"
 echo ""
 
+# Initialize session and get session ID
+echo "🤝 Initializing MCP session..."
+SESSION_ID=$(curl -si -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 0,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {}
+    }
+  }' | grep -i 'mcp-session-id' | awk -F': ' '{print $2}' | tr -d '\r')
+
+if [ -z "$SESSION_ID" ]; then
+    echo "❌ Failed to get session ID"
+    exit 1
+fi
+echo "✅ Session initialized with ID: $SESSION_ID"
+echo ""
+
 # Clear existing content
 echo "🧹 Clearing existing content..."
 curl -s -X POST http://localhost:8080/api/clear > /dev/null
@@ -27,6 +48,7 @@ sleep 1
 echo "📝 Displaying welcome text..."
 curl -s -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
@@ -45,6 +67,7 @@ sleep 2
 echo "🎨 Displaying SVG graphics..."
 curl -s -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
     "id": 2,
@@ -67,6 +90,7 @@ if [ -f "public/water.png" ]; then
     IMAGE_B64=$(base64 -i public/water.png | tr -d '\n')
     curl -s -X POST http://localhost:8080/mcp \
       -H "Content-Type: application/json" \
+      -H "mcp-session-id: $SESSION_ID" \
       -d "{
         \"jsonrpc\": \"2.0\",
         \"id\": 3,
@@ -83,6 +107,7 @@ else
     echo "⚠️ water.png not found, using placeholder image..."
     curl -s -X POST http://localhost:8080/mcp \
       -H "Content-Type: application/json" \
+      -H "mcp-session-id: $SESSION_ID" \
       -d '{
         "jsonrpc": "2.0",
         "id": 3,
@@ -103,6 +128,7 @@ sleep 2
 echo "🎉 Displaying completion message..."
 curl -s -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
     "id": 4,

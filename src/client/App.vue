@@ -106,10 +106,14 @@ export default {
         
         switch (message.type) {
           case 'content':
-            displayContent.value = message.data
+            displayContent.value.unshift(...message.data)
+            // Keep only last 100 entries
+            if (displayContent.value.length > 100) {
+              displayContent.value = displayContent.value.slice(0, 100)
+            }
             break
           case 'connection':
-            connectionLog.value.unshift(message.data)
+            connectionLog.value.unshift(...message.data)
             // Keep only last 100 entries
             if (connectionLog.value.length > 100) {
               connectionLog.value = connectionLog.value.slice(0, 100)
@@ -340,8 +344,6 @@ export default {
   color: #666;
   font-size: 14px;
 }
-
-
 
 .text-content-inline {
   background-color: white;
