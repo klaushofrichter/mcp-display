@@ -57,6 +57,7 @@ sleep 1
 echo "📝 Displaying welcome text..."
 curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
@@ -70,13 +71,13 @@ curl -s -X POST http://localhost:3000/mcp \
     }
   }' > /dev/null
 
-exit 0  # because we should first be able to show the text
 sleep 2
 
 # 2. Display SVG graphics
 echo "🎨 Displaying SVG graphics..."
 curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
@@ -100,6 +101,7 @@ if [ -f "public/water.png" ]; then
     IMAGE_B64=$(base64 -i public/water.png | tr -d '\n')
     curl -s -X POST http://localhost:3000/mcp \
       -H "Content-Type: application/json" \
+      -H "Accept: application/json, text/event-stream" \
       -H "mcp-session-id: $SESSION_ID" \
       -d "{
         \"jsonrpc\": \"2.0\",
@@ -117,6 +119,7 @@ else
     echo "⚠️ water.png not found, using placeholder image..."
     curl -s -X POST http://localhost:3000/mcp \
       -H "Content-Type: application/json" \
+      -H "Accept: application/json, text/event-stream" \
       -H "mcp-session-id: $SESSION_ID" \
       -d '{
         "jsonrpc": "2.0",
@@ -138,6 +141,7 @@ sleep 2
 echo "🎉 Displaying completion message..."
 curl -s -X POST http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
