@@ -2,6 +2,8 @@
 
 A local MCP (Model Context Protocol) server supporting HTTP transport that offers tools for MCP clients to display text, image, and SVG content in a web browser interface.
 
+This repository is discontinued in favor of another version [here](https://github.com/klaushofrichter/mcp-display-v2)
+
 ## Table of Contents
 
 - [Installation](#installation)
